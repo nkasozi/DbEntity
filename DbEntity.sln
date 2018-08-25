@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27703.2042
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbEntity", "DbEntity.csproj", "{D3C47617-6387-4F91-925E-8D46AD09BF42}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbEntityTester", "..\DbEntityTester\DbEntityTester.csproj", "{089BA91C-A617-468C-99BF-EBA719D9A69C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3C47617-6387-4F91-925E-8D46AD09BF42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3C47617-6387-4F91-925E-8D46AD09BF42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3C47617-6387-4F91-925E-8D46AD09BF42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3C47617-6387-4F91-925E-8D46AD09BF42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{089BA91C-A617-468C-99BF-EBA719D9A69C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{089BA91C-A617-468C-99BF-EBA719D9A69C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{089BA91C-A617-468C-99BF-EBA719D9A69C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{089BA91C-A617-468C-99BF-EBA719D9A69C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3AB73C90-8558-47C2-8641-2E3CFA328988}
+	EndGlobalSection
+EndGlobal

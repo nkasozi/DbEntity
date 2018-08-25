@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package >
+  <metadata>
+    <id>DbEntity</id>
+    <version>8</version>
+    <title>DbEntity</title>
+   <authors>Nkasozi</authors>
+    <owners>Nkasozi</owners>
+    <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>http://github.com/nkasozi/DbEntity</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Simple Stored Procedure Support for Castle Active Record</description>
+    <copyright>Copyright 2018</copyright>
+    <tags>DbEntity</tags>
+  </metadata>
+</package>
