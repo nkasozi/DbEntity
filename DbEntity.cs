@@ -10,6 +10,8 @@ namespace DbEntity
 {
     public class DbEntity<T> : ActiveRecordBase<T> where T : new()
     {
+        private const string StoredProcForParameterNames = "GetStoredProcParametersInOrder";
+
         public string StatusCode { get; set; }
         public string StatusDesc { get; set; }
 
@@ -22,23 +24,22 @@ namespace DbEntity
             return true;
         }
 
-
-        public Task SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        public virtual Task SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => SaveWithStoredProc(storedProc, storedProcParameters));
         }
 
-        public Task UpdateWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        public virtual Task UpdateWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => UpdateWithStoredProc(storedProc, storedProcParameters));
         }
 
-        public Task InsertWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        public virtual Task InsertWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => InsertWithStoredProc(storedProc, storedProcParameters));
         }
 
-        public Task DeleteWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        public virtual Task DeleteWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => DeleteWithStoredProc(storedProc, storedProcParameters));
         }
@@ -46,7 +47,7 @@ namespace DbEntity
         public static T[] QueryWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             List<T> all = new List<T>();
-            DataTable dt = DatabaseHandler.ExecuteStoredProc(storedProc, storedProcParameters);
+            DataTable dt = DbEntityDbHandler.ExecuteStoredProc(storedProc, storedProcParameters);
 
             foreach (DataRow dr in dt.Rows)
             {
@@ -58,27 +59,128 @@ namespace DbEntity
             return all.ToArray();
         }
 
-        public int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
+        public virtual T[] QueryWithStoredProcAutoParams(string storedProc)
         {
-            int rowsAffected = DatabaseHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            List<T> all = new List<T>();
+
+            object[] storedProcParameters = GetStoredProcParameters(storedProc);
+
+            DataTable dt = DbEntityDbHandler.ExecuteStoredProc(storedProc, storedProcParameters);
+
+            foreach (DataRow dr in dt.Rows)
+            {
+                T obj = new T();
+                CopyParentArrayToChildProperty(dr, obj);
+                all.Add(obj);
+            }
+
+            return all.ToArray();
+        }
+
+        private object[] GetStoredProcParameters(string storedProc)
+        {
+            List<object> all = new List<object>();
+
+            DataSet ds = DbEntityDbHandler.ExecuteDataSet(StoredProcForParameterNames, storedProc);
+
+            if (ds?.Tables.Count <= 0)
+                return all.ToArray();
+
+            DataTable dataTable = ds.Tables[0];
+
+            if (dataTable?.Rows.Count <= 0)
+                return all.ToArray();
+
+            T obj = new T();
+
+            //aim here is simple
+            //for each stored procedure parameter found,
+            //we find the object property with the same name,
+            //we then get that propertys value and save that in the array of parameters to pass
+            foreach (DataRow row in dataTable.Rows)
+            {
+                var objProperties = obj.GetType().GetProperties();
+                bool propertyFound = false;
+
+                foreach (var objProperty in objProperties)
+                {
+                    try
+                    {
+                        string storedProcParamaterName = row["Parameter_name"].ToString().Replace("@",string.Empty);
+                        if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
+                        {
+                            all.Add(objProperty.GetValue(this, null));
+                            propertyFound = true;
+                            break;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                //if after looping thru all the obj properties
+                //we still cant find a property with the same name
+                //just set that stored proc paramater value as null
+                if (!propertyFound)
+                {
+                    all.Add(null);
+                }
+            }
+
+
+            return all.ToArray();
+        }
+
+        public virtual int SaveWithStoredProcAutoParams(string storedProc)
+        {
+            object[] storedProcParameters = GetStoredProcParameters(storedProc);
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
-        public int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
+        public virtual int InsertWithStoredProcAutoParams(string storedProc)
         {
-            int rowsAffected = DatabaseHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            object[] storedProcParameters = GetStoredProcParameters(storedProc);
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
-        public int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
+        public virtual int UpdateWithStoredProcAutoParams(string storedProc)
         {
-            int rowsAffected = DatabaseHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            object[] storedProcParameters = GetStoredProcParameters(storedProc);
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
-        public int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
+        public virtual int DeleteWithStoredProcAutoParams(string storedProc)
         {
-            int rowsAffected = DatabaseHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            object[] storedProcParameters = GetStoredProcParameters(storedProc);
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
@@ -118,7 +220,7 @@ namespace DbEntity
                             string column = propertyAttribute.Column;
                             if (column != null)
                             {
-                                childProperty.SetValue(child, parent[column],new object[] { });
+                                childProperty.SetValue(child, parent[column], new object[] { });
                                 hasBeenSet = true;
                                 break;
                             }

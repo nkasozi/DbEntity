@@ -22,7 +22,6 @@ namespace DbEntity
 
             try
             {
-                var conString = ConfigurationManager.AppSettings;
                 SetConnectionStringInDatabaseHandler();
                 IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
@@ -33,7 +32,7 @@ namespace DbEntity
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
                     apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
-                    apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: "+ex.Message;
+                    apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
                 else
                 {
@@ -44,13 +43,103 @@ namespace DbEntity
             return apiResult;
         }
 
+        public static DbResult CreateDbIfNotExistsAndUpdateSchema()
+        {
+            DbResult apiResult = new DbResult();
+
+            try
+            {
+                apiResult = CreateDatabaseIfNotExists();
+
+                if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
+                {
+                    return apiResult;
+                }
+
+                IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
+                ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
+                ActiveRecordStarter.UpdateSchema();
+
+                apiResult.SetSuccessAsStatusInResponseFields();
+            }
+            catch (Exception ex)
+            {
+                if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
+                {
+                    apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
+                    apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
+                }
+                else
+                {
+                    apiResult.SetFailuresAsStatusInResponseFields(ExceptionLeadString + ex.Message);
+                }
+            }
+
+            return apiResult;
+        }
+
+        private static DbResult CreateDatabaseIfNotExists()
+        {
+            DbResult apiResult = new DbResult();
+
+            try
+            {
+                string connectionString = ReadConnectionFromConfig();
+                try
+                {
+                    string databaseName = connectionString?.Split(';')?.Where(i => i.ToUpper().Contains("CATALOG"))?.FirstOrDefault()?.Split('=')?[1];
+                    string newConnectionString = connectionString.Replace(databaseName, "master");
+
+                    bool isSet = DbEntityDbHandler.SetConnectionString(newConnectionString);
+
+                    if (!isSet)
+                    {
+                        apiResult.SetFailuresAsStatusInResponseFields($"ERROR: UNABLE TO SET NEW CONNECTION STRING IN CONFIG FILE");
+                        return apiResult;
+                    }
+
+                    string createSQL = $"Create Database {databaseName}";
+                    int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(createSQL);
+
+                    apiResult.SetSuccessAsStatusInResponseFields();
+                }
+                catch(Exception ex)
+                {
+                    string msg = ex.Message;
+                    if (msg.ToUpper().Contains("EXISTS") || msg.ToUpper().Contains("ALREADY"))
+                    {
+                        apiResult.SetSuccessAsStatusInResponseFields();
+                    }
+                    else
+                    {
+                        apiResult.SetFailuresAsStatusInResponseFields($"ERROR: {msg}");
+                    }
+                }
+
+                DbEntityDbHandler.SetConnectionString(connectionString);
+                return apiResult;
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message;
+                if (msg.ToUpper().Contains("EXISTS") || msg.ToUpper().Contains("ALREADY"))
+                {
+                    apiResult.SetSuccessAsStatusInResponseFields();
+                }
+                else
+                {
+                    apiResult.SetFailuresAsStatusInResponseFields($"ERROR: {msg}");
+                }
+            }
+            return apiResult;
+        }
+
         public static DbResult InitializeAndUpdateSchema()
         {
             DbResult apiResult = new DbResult();
 
             try
             {
-                var conString = ConfigurationManager.AppSettings;//.ConnectionStrings["connection.connection_string"].ConnectionString;
                 SetConnectionStringInDatabaseHandler();
                 IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
 
@@ -77,6 +166,13 @@ namespace DbEntity
 
         public static void SetConnectionStringInDatabaseHandler()
         {
+            string dbConnectionString = ReadConnectionFromConfig();
+            DbEntityDbHandler.SetConnectionString(dbConnectionString);
+        }
+
+        private static string ReadConnectionFromConfig()
+        {
+
             //get config file path
             //open and read file path to the section containing active record
             //read the connection string value in "connection.connection_string"
@@ -91,9 +187,9 @@ namespace DbEntity
                          Elements("add")?.
                          Where(i => i.HasAttributes && i.Attribute("key").Value == connectionStringKey).FirstOrDefault()?.
                          Attribute("value")?.Value;
-            
-            dbConnectionString = dbConnectionString ?? throw new Exception ($"No Connection String Value {connectionStringKey} found Defined in config file {pathToActiveAppConfig}");
-            DatabaseHandler.SetConnectionString(dbConnectionString);
+
+            dbConnectionString = dbConnectionString ?? throw new Exception($"No Connection String Value {connectionStringKey} found Defined in config file {pathToActiveAppConfig}");
+            return dbConnectionString;
         }
 
         public static DbResult DropAndRecreate()

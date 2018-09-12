@@ -2,6 +2,7 @@
 using Microsoft.Practices.EnterpriseLibrary.Data;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
@@ -9,10 +10,11 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-public static class DatabaseHandler
+public static class DbEntityDbHandler
 {
-    private static string ConnectionString = "";
-    private static Database DB = null;
+    private const string _DB_ENITY_CONSTRING_NAME = "DbEntityConnectionString";
+    private static string _connectionString = "";
+    private static Database _database = null;
 
     public static void LogError(string ID, string Message)
     {
@@ -32,9 +34,9 @@ public static class DatabaseHandler
         DataTable dt = new DataTable();
         try
         {
-            InitDB();
-            DbCommand procommand = DB.GetStoredProcCommand(StoredProc, parameters);
-            dt = DB.ExecuteDataSet(procommand).Tables[0];
+            //InitDB();
+            DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
+            dt = _database.ExecuteDataSet(procommand).Tables[0];
 
             return dt;
         }
@@ -46,8 +48,54 @@ public static class DatabaseHandler
 
     private static bool InitDB()
     {
-        if (string.IsNullOrEmpty(ConnectionString)) { throw new Exception($"Connection string {ConnectionString} cant be NULL or EMPTY"); }
-        DB = DB ?? new Microsoft.Practices.EnterpriseLibrary.Data.Sql.SqlDatabase(ConnectionString);
+        //no connection string was set prior to calling this guy
+        if (string.IsNullOrEmpty(_connectionString)) { throw new Exception($"Connection string {_connectionString} cant be NULL or EMPTY"); }
+
+        //try to update the config file with the new connection string
+        //bool isConfigUpdated = CreateConstringInConfig(_connectionString);
+
+        ////error on changing the config file
+        //if (!isConfigUpdated) { return isConfigUpdated; }
+
+        //if the database is null then, create a new connection
+        _database = _database ?? new Microsoft.Practices.EnterpriseLibrary.Data.Sql.SqlDatabase(_connectionString);
+        return true;
+    }
+
+    private static bool CreateConstringInConfig(string DbConString)
+    {
+        // Get the application configuration file.
+        Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+
+        // Create a connection string element and
+        // save it to the configuration file.
+
+        // Create a connection string element.
+        ConnectionStringSettings csSettings = new ConnectionStringSettings();
+
+        //make sure these guys are set
+        csSettings.Name = "DbEntityConnectionString";
+        csSettings.ConnectionString = DbConString;
+        csSettings.ProviderName = "System.Data.SqlClient";
+
+        // Get the connection strings section.
+        ConnectionStringsSection csSection = config.ConnectionStrings;
+        
+
+        // Add the new element.
+        try
+        {
+            csSection.ConnectionStrings.Remove(csSettings);
+            csSection.ConnectionStrings.Add(csSettings);
+        }
+        catch (Exception ex)
+        {
+            return false;
+        }
+
+        // Save the configuration file.
+        config.Save(ConfigurationSaveMode.Modified);
+       
         return true;
     }
 
@@ -56,9 +104,9 @@ public static class DatabaseHandler
         DataSet dt = new DataSet();
         try
         {
-            InitDB();
-            DbCommand procommand = DB.GetSqlStringCommand(sqlQuery);
-            dt = DB.ExecuteDataSet(procommand);
+            //InitDB();
+            DbCommand procommand = _database.GetSqlStringCommand(sqlQuery);
+            dt = _database.ExecuteDataSet(procommand);
 
             return dt;
         }
@@ -73,9 +121,9 @@ public static class DatabaseHandler
         int dt = 0;
         try
         {
-            InitDB();
-            DbCommand procommand = DB.GetSqlStringCommand(sqlQuery);
-            dt = DB.ExecuteNonQuery(procommand);
+            //InitDB();
+            DbCommand procommand = _database.GetSqlStringCommand(sqlQuery);
+            dt = _database.ExecuteNonQuery(procommand);
 
             return dt;
         }
@@ -85,14 +133,14 @@ public static class DatabaseHandler
         }
     }
 
-    public static int ExecuteNonQuery(string storedProc, object[] parameters)
+    public static int ExecuteNonQuery(string storedProc, params object[] parameters)
     {
         int rowsAffected = 0;
         try
         {
-            InitDB();
-            DbCommand procommand = DB.GetStoredProcCommand(storedProc, parameters);
-            rowsAffected = DB.ExecuteNonQuery(procommand);
+            //InitDB();
+            DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
+            rowsAffected = _database.ExecuteNonQuery(procommand);
             return rowsAffected;
         }
         catch (Exception ex)
@@ -103,19 +151,24 @@ public static class DatabaseHandler
 
     public static bool SetConnectionString(string connectionString)
     {
-        ConnectionString = connectionString;
-        DB = null;
-        return true;
+        _connectionString = connectionString;
+        _database = null;
+        return InitDB();
     }
 
-    public static DataSet ExecuteDataSet(string storedProc, object[] parameters)
+    public static string GetConnectionString()
+    {
+        return _connectionString;
+    }
+
+    public static DataSet ExecuteDataSet(string storedProc,params object[] parameters)
     {
         DataSet ds = new DataSet();
         try
         {
-            InitDB();
-            DbCommand procommand = DB.GetStoredProcCommand(storedProc, parameters);
-            ds = DB.ExecuteDataSet(procommand);
+            //InitDB();
+            DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
+            ds = _database.ExecuteDataSet(procommand);
             return ds;
         }
         catch (Exception ex)
