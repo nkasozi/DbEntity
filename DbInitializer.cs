@@ -14,6 +14,9 @@ namespace DbEntity
         private const string SectionName = "activerecord";
         private const string SubSectionName = "config";
         private const string ConStringKeyName = "connection.connection_string";
+
+        public const string StoredProcForParameterNames = "GetStoredProcParametersInOrder";
+
         public static List<Type> TypesToKeepTrackOf = new List<Type>();
 
         public static DbResult Initialize()
@@ -23,6 +26,7 @@ namespace DbEntity
             try
             {
                 SetConnectionStringInDatabaseHandler();
+                CreateStoredProcedures();
                 IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 apiResult.SetSuccessAsStatusInResponseFields();
@@ -56,6 +60,7 @@ namespace DbEntity
                     return apiResult;
                 }
 
+                CreateStoredProcedures();
                 IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.UpdateSchema();
@@ -75,6 +80,34 @@ namespace DbEntity
                 }
             }
 
+            return apiResult;
+        }
+
+        private static DbResult CreateStoredProcedures()
+        {
+            DbResult apiResult = new DbResult();
+
+            try
+            {
+                string createSql = $"create proc {StoredProcForParameterNames}" +
+                                    "@StoredProcName varchar(200)" +
+                                    "as" +
+                                    "Begin" +
+                                       "select" +
+                                       "'Parameter_name' = name," +
+                                       "'Type' = type_name(user_type_id)," +
+                                       "'Param_order' = parameter_id" +
+                                       "from sys.parameters where object_id = object_id(@StoredProcName)" +
+                                       "order by Param_order asc" +
+                                    "End";
+                int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(createSql);
+                apiResult.SetSuccessAsStatusInResponseFields();
+            }
+            catch (Exception ex)
+            {
+                string msg = ex.Message;
+                apiResult.SetFailuresAsStatusInResponseFields($"ERROR: {msg}");
+            }
             return apiResult;
         }
 
@@ -103,7 +136,7 @@ namespace DbEntity
 
                     apiResult.SetSuccessAsStatusInResponseFields();
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     string msg = ex.Message;
                     if (msg.ToUpper().Contains("EXISTS") || msg.ToUpper().Contains("ALREADY"))
@@ -141,6 +174,7 @@ namespace DbEntity
             try
             {
                 SetConnectionStringInDatabaseHandler();
+                CreateStoredProcedures();
                 IConfigurationSource source = ConfigurationManager.GetSection(SectionName) as IConfigurationSource;
 
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
@@ -204,6 +238,7 @@ namespace DbEntity
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.DropSchema();
                 ActiveRecordStarter.UpdateSchema();
+                CreateStoredProcedures();
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)

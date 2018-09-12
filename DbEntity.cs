@@ -10,8 +10,7 @@ namespace DbEntity
 {
     public class DbEntity<T> : ActiveRecordBase<T> where T : new()
     {
-        private const string StoredProcForParameterNames = "GetStoredProcParametersInOrder";
-
+        
         public string StatusCode { get; set; }
         public string StatusDesc { get; set; }
 
@@ -81,7 +80,7 @@ namespace DbEntity
         {
             List<object> all = new List<object>();
 
-            DataSet ds = DbEntityDbHandler.ExecuteDataSet(StoredProcForParameterNames, storedProc);
+            DataSet ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForParameterNames, storedProc);
 
             if (ds?.Tables.Count <= 0)
                 return all.ToArray();
