@@ -93,12 +93,20 @@ namespace DbEntity
                 ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForParameterNames, storedProc);
 
             if (ds?.Tables.Count <= 0)
+            {
+                if (!StoredProcParameters.ContainsKey(storedProc))
+                    StoredProcParameters.Add(storedProc, ds);
                 return allParameters.ToArray();
+            }
 
             DataTable dataTable = ds.Tables[0];
 
             if (dataTable?.Rows.Count <= 0)
+            {
+                if (!StoredProcParameters.ContainsKey(storedProc))
+                    StoredProcParameters.Add(storedProc, ds);
                 return allParameters.ToArray();
+            }
 
             T obj = new T();
 
