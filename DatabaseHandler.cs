@@ -46,6 +46,27 @@ public static class DbEntityDbHandler
         }
     }
 
+    public static dynamic[] ExecuteStoredProcDynamically(string StoredProc, params object[] parameters)
+    {
+        List<dynamic> objects = new List<dynamic>();
+        DataTable dt = new DataTable();
+        try
+        {
+            DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
+            dt = _database.ExecuteDataSet(procommand).Tables[0];
+            foreach(DataRow row in dt.Rows)
+            {
+                dynamic drow = new DynamicDataRow(row);
+                objects.Add(drow);
+            }
+            return objects.ToArray();
+        }
+        catch (Exception ex)
+        {
+            throw ex;
+        }
+    }
+
     private static bool InitDB()
     {
         //no connection string was set prior to calling this guy

@@ -46,6 +46,7 @@ namespace DbEntity
         public static T[] QueryWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             List<T> all = new List<T>();
+
             DataTable dt = DbEntityDbHandler.ExecuteStoredProc(storedProc, storedProcParameters);
 
             foreach (DataRow dr in dt.Rows)
@@ -73,6 +74,8 @@ namespace DbEntity
                 all.Add(obj);
             }
 
+            this.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
+            this.StatusDesc = DbGlobals.SUCCESS_STATUS_TEXT;
             return all.ToArray();
         }
 
@@ -106,6 +109,7 @@ namespace DbEntity
                     try
                     {
                         string storedProcParamaterName = row["Parameter_name"].ToString().Replace("@",string.Empty);
+
                         if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
                         {
                             all.Add(objProperty.GetValue(this, null));
@@ -188,53 +192,84 @@ namespace DbEntity
             return Task.Factory.StartNew(() => QueryWithStoredProc(storedProc, storedProcParameters));
         }
 
-        private static void CopyParentArrayToChildProperty(DataRow parent, object child)
+        private static void CopyParentArrayToChildProperty(DataRow parent, T obj)
         {
-            var childProperties = child.GetType().GetProperties();
+            var objProperties = obj.GetType().GetProperties();
 
-            foreach (var childProperty in childProperties)
+            foreach (var objProperty in objProperties)
             {
                 try
                 {
-                    object[] attrs = childProperty.GetCustomAttributes(false);
+                    object[] customAttributes = objProperty.GetCustomAttributes(false);
                     bool hasBeenSet = false;
 
-                    foreach (object attr in attrs)
+                    foreach (object customAttribute in customAttributes)
                     {
-                        PrimaryKeyAttribute pkAttribute = attr as PrimaryKeyAttribute;
+                        PrimaryKeyAttribute pkAttribute = customAttribute as PrimaryKeyAttribute;
+
                         if (pkAttribute != null)
                         {
                             string column = pkAttribute.Column;
                             if (column != null)
                             {
-                                childProperty.SetValue(child, parent[column], new object[] { });
+                                objProperty.SetValue(obj, parent[column], new object[] { });
                                 hasBeenSet = true;
                                 break;
                             }
                         }
 
-                        PropertyAttribute propertyAttribute = attr as PropertyAttribute;
+                        PropertyAttribute propertyAttribute = customAttribute as PropertyAttribute;
+
                         if (propertyAttribute != null)
                         {
                             string column = propertyAttribute.Column;
                             if (column != null)
                             {
-                                childProperty.SetValue(child, parent[column], new object[] { });
+                                objProperty.SetValue(obj, parent[column], new object[] { });
                                 hasBeenSet = true;
                                 break;
                             }
                         }
                     }
-                    if (hasBeenSet) { continue; }
-                    childProperty.SetValue(child, parent[childProperty.Name], new object[] { });
-                }
-                catch (Exception)
-                {
 
+                    if (hasBeenSet)
+                        continue; 
+
+                    objProperty.SetValue(obj, parent[objProperty.Name], new object[] { });
+                }
+                catch (Exception ex)
+                {
+                    //db value is null so we cant convert it to .net value
+                    if (ex.Message.ToUpper().Contains("DBNull".ToUpper()))
+                        continue;
+
+                    //property in object not found in row returned
+                    if (ex.Message.ToUpper().Contains("does not belong to table Table".ToUpper()))
+                        continue;
+
+                    //set the status code and failure desc values
+                    TryToSetObjectProperty(obj, nameof(StatusCode), DbGlobals.FAILURE_STATUS_CODE);
+                    TryToSetObjectProperty(obj, nameof(StatusDesc), $"FAILED: UNABLE TO SET VALUE FOR {objProperty.Name}. REASON: {ex.Message}");
+                    return;
                 }
             }
+
+            //set the status code and status desc values
+            TryToSetObjectProperty(obj, nameof(StatusCode), DbGlobals.SUCCESS_STATUS_CODE);
+            TryToSetObjectProperty(obj, nameof(StatusDesc), DbGlobals.SUCCESS_STATUS_TEXT);
         }
 
+        private static void TryToSetObjectProperty(object theObject, string propertyName, object value)
+        {
+            try
+            {
+                Type type = theObject.GetType();
+                var property = type.GetProperty(propertyName);
+                var setter = property.SetMethod;
+                setter.Invoke(theObject, new object[] { value });
+            }
+            catch (Exception) { }
+        }
 
         public virtual bool SetSuccessAsStatusInResponseFields()
         {
