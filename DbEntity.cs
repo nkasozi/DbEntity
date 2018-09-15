@@ -10,9 +10,11 @@ namespace DbEntity
 {
     public class DbEntity<T> : ActiveRecordBase<T> where T : new()
     {
-        
+
         public string StatusCode { get; set; }
         public string StatusDesc { get; set; }
+
+        private Dictionary<string, DataSet> StoredProcParameters = new Dictionary<string, DataSet>();
 
         public DbEntity()
         {
@@ -81,17 +83,22 @@ namespace DbEntity
 
         private object[] GetStoredProcParameters(string storedProc)
         {
-            List<object> all = new List<object>();
+            List<object> allParameters = new List<object>();
 
-            DataSet ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForParameterNames, storedProc);
+            DataSet ds = null;
+
+            if (StoredProcParameters.ContainsKey(storedProc))
+                ds = StoredProcParameters[storedProc];
+            else
+                ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForParameterNames, storedProc);
 
             if (ds?.Tables.Count <= 0)
-                return all.ToArray();
+                return allParameters.ToArray();
 
             DataTable dataTable = ds.Tables[0];
 
             if (dataTable?.Rows.Count <= 0)
-                return all.ToArray();
+                return allParameters.ToArray();
 
             T obj = new T();
 
@@ -99,7 +106,7 @@ namespace DbEntity
             //for each stored procedure parameter found,
             //we find the object property with the same name,
             //we then get that propertys value and save that in the array of parameters to pass
-            foreach (DataRow row in dataTable.Rows)
+            foreach (DataRow storedProcParameter in dataTable.Rows)
             {
                 var objProperties = obj.GetType().GetProperties();
                 bool propertyFound = false;
@@ -108,11 +115,11 @@ namespace DbEntity
                 {
                     try
                     {
-                        string storedProcParamaterName = row["Parameter_name"].ToString().Replace("@",string.Empty);
+                        string storedProcParamaterName = storedProcParameter["Parameter_name"].ToString().Replace("@", string.Empty);
 
                         if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
                         {
-                            all.Add(objProperty.GetValue(this, null));
+                            allParameters.Add(objProperty.GetValue(this, null));
                             propertyFound = true;
                             break;
                         }
@@ -127,12 +134,14 @@ namespace DbEntity
                 //just set that stored proc paramater value as null
                 if (!propertyFound)
                 {
-                    all.Add(null);
+                    allParameters.Add(null);
                 }
             }
 
+            if(!StoredProcParameters.ContainsKey(storedProc))
+                StoredProcParameters.Add(storedProc, ds);
 
-            return all.ToArray();
+            return allParameters.ToArray();
         }
 
         public virtual int SaveWithStoredProcAutoParams(string storedProc)
@@ -233,7 +242,7 @@ namespace DbEntity
                     }
 
                     if (hasBeenSet)
-                        continue; 
+                        continue;
 
                     objProperty.SetValue(obj, parent[objProperty.Name], new object[] { });
                 }
