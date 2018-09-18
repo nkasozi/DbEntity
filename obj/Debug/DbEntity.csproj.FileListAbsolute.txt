@@ -58,7 +58,6 @@ E:\PePay\ChangeRequestProject\DbEntity\bin\Debug\Microsoft.Practices.EnterpriseL
 E:\PePay\ChangeRequestProject\DbEntity\bin\Debug\Microsoft.Practices.ServiceLocation.pdb
 E:\PePay\ChangeRequestProject\DbEntity\bin\Debug\Microsoft.Practices.Unity.pdb
 E:\PePay\ChangeRequestProject\DbEntity\bin\Debug\Microsoft.Practices.Unity.Interception.pdb
-E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.csprojAssemblyReference.cache
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.csproj.CoreCompileInputs.cache
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.csproj.CopyComplete
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.dll

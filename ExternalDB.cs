@@ -1,11 +1,7 @@
 ﻿using Microsoft.Practices.EnterpriseLibrary.Data;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 
 public class ExternalDB
@@ -24,7 +20,6 @@ public class ExternalDB
             throw ex;
         }
     }
-
 
     public DataTable ExecuteStoredProc(string StoredProc, params object[] parameters)
     {

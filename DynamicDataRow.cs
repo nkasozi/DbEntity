@@ -2,7 +2,8 @@
 using System.Data;
 using System.Dynamic;
 
-
+namespace DbEntity
+{
     /// <summary>
     /// This class provides an easy way to turn a DataRow 
     /// into a Dynamic object that supports direct property
@@ -81,4 +82,5 @@ using System.Dynamic;
             return false;
         }
     }
+}
 

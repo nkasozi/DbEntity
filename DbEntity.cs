@@ -2,8 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace DbEntity
@@ -13,7 +11,10 @@ namespace DbEntity
 
         public string StatusCode { get; set; }
         public string StatusDesc { get; set; }
+        public string StoredProcedureParametersPassed { get; set; }
 
+        //Simple implementation of a Last Recently Used (LRU) cache to hold the last stored paramaters picked from DB 
+        //(prevent too many calls to the Db to pick parameters of stored proc)
         private Dictionary<string, DataSet> StoredProcParameters = new Dictionary<string, DataSet>();
 
         public DbEntity()
@@ -81,77 +82,6 @@ namespace DbEntity
             return all.ToArray();
         }
 
-        private object[] GetStoredProcParameters(string storedProc)
-        {
-            List<object> allParameters = new List<object>();
-
-            DataSet ds = null;
-
-            if (StoredProcParameters.ContainsKey(storedProc))
-                ds = StoredProcParameters[storedProc];
-            else
-                ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForParameterNames, storedProc);
-
-            if (ds?.Tables.Count <= 0)
-            {
-                if (!StoredProcParameters.ContainsKey(storedProc))
-                    StoredProcParameters.Add(storedProc, ds);
-                return allParameters.ToArray();
-            }
-
-            DataTable dataTable = ds.Tables[0];
-
-            if (dataTable?.Rows.Count <= 0)
-            {
-                if (!StoredProcParameters.ContainsKey(storedProc))
-                    StoredProcParameters.Add(storedProc, ds);
-                return allParameters.ToArray();
-            }
-
-            T obj = new T();
-
-            //aim here is simple
-            //for each stored procedure parameter found,
-            //we find the object property with the same name,
-            //we then get that propertys value and save that in the array of parameters to pass
-            foreach (DataRow storedProcParameter in dataTable.Rows)
-            {
-                var objProperties = obj.GetType().GetProperties();
-                bool propertyFound = false;
-
-                foreach (var objProperty in objProperties)
-                {
-                    try
-                    {
-                        string storedProcParamaterName = storedProcParameter["Parameter_name"].ToString().Replace("@", string.Empty);
-
-                        if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
-                        {
-                            allParameters.Add(objProperty.GetValue(this, null));
-                            propertyFound = true;
-                            break;
-                        }
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                //if after looping thru all the obj properties
-                //we still cant find a property with the same name
-                //just set that stored proc paramater value as null
-                if (!propertyFound)
-                {
-                    allParameters.Add(null);
-                }
-            }
-
-            if(!StoredProcParameters.ContainsKey(storedProc))
-                StoredProcParameters.Add(storedProc, ds);
-
-            return allParameters.ToArray();
-        }
-
         public virtual int SaveWithStoredProcAutoParams(string storedProc)
         {
             object[] storedProcParameters = GetStoredProcParameters(storedProc);
@@ -202,6 +132,20 @@ namespace DbEntity
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
+        }
+
+        public virtual bool SetSuccessAsStatusInResponseFields()
+        {
+            StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
+            StatusDesc = DbGlobals.SUCCESS_STATUS_TEXT;
+            return true;
+        }
+
+        public virtual bool SetFailuresAsStatusInResponseFields(string Message)
+        {
+            StatusCode = DbGlobals.FAILURE_STATUS_CODE;
+            StatusDesc = Message;
+            return true;
         }
 
         public static Task QueryWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
@@ -288,18 +232,107 @@ namespace DbEntity
             catch (Exception) { }
         }
 
-        public virtual bool SetSuccessAsStatusInResponseFields()
+        private object[] GetStoredProcParameters(string storedProc)
         {
-            StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
-            StatusDesc = DbGlobals.SUCCESS_STATUS_TEXT;
-            return true;
+            List<object> allParameters = new List<object>();
+
+            DataSet ds = null;
+
+            if (StoredProcParameters.ContainsKey(storedProc))
+            {
+                ds = StoredProcParameters[storedProc];
+            }
+            else
+            {
+                ds = GetParametersFromDb(storedProc);
+            }
+
+            if (ds?.Tables.Count <= 0)
+            {
+                if (!StoredProcParameters.ContainsKey(storedProc))
+                    StoredProcParameters.Add(storedProc, ds);
+            }
+
+            DataTable dataTable = ds.Tables[0];
+
+            if (dataTable?.Rows.Count <= 0)
+            {
+                if (!StoredProcParameters.ContainsKey(storedProc))
+                    StoredProcParameters.Add(storedProc, ds);
+            }
+
+            T obj = new T();
+            StoredProcedureParametersPassed = "";
+            //aim here is simple
+            //for each stored procedure parameter found,
+            //we find the object property with the same name,
+            //we then get that propertys value and save that in the array of parameters to pass
+            //since sql is not Case sensitive, we find first matching parameter
+            foreach (DataRow storedProcParameter in dataTable.Rows)
+            {
+                var objProperties = obj.GetType().GetProperties();
+                bool propertyFound = false;
+                string storedProcParamaterName = storedProcParameter["Parameter_name"].ToString().Replace("@", string.Empty);
+
+                foreach (var objProperty in objProperties)
+                {
+                    try
+                    {
+                        
+                        if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
+                        {
+                            
+                            object objValue = objProperty.GetValue(this, null);
+                            StoredProcedureParametersPassed += $"{storedProcParamaterName}: {objValue},";
+                            allParameters.Add(objValue);
+                            propertyFound = true;
+                            break;
+                        }
+                    }
+                    catch (Exception)
+                    {
+                    }
+                }
+
+                //if after looping thru all the obj properties
+                //we still cant find a property with the same name
+                //just set that stored proc paramater value as null
+                if (!propertyFound)
+                {
+                    StoredProcedureParametersPassed += $"{storedProcParamaterName}: null,";
+                    allParameters.Add(null);
+                }
+                
+            }
+
+            
+            
+
+            if (!StoredProcParameters.ContainsKey(storedProc))
+                StoredProcParameters.Add(storedProc, ds);
+
+            StoredProcedureParametersPassed.Trim(',');
+            return allParameters.ToArray();
         }
 
-        public virtual bool SetFailuresAsStatusInResponseFields(string Message)
+        private DataSet GetParametersFromDb(string storedProc)
         {
-            StatusCode = DbGlobals.FAILURE_STATUS_CODE;
-            StatusDesc = Message;
-            return true;
+            DataSet ds = new DataSet();
+            if (!DbInitializer.IsInitOfStoredProcSuccessfull)
+            {
+                string sql = "select" +
+                             "'Parameter_name' = name," +
+                             "'Type' = type_name(user_type_id)," +
+                             "'Param_order' = parameter_id" +
+                             "from sys.parameters where object_id = object_id(@StoredProcName)" +
+                             "order by Param_order asc";
+                ds = DbEntityDbHandler.ExecuteSqlQuery(sql);
+            }
+            else
+            {
+                ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForGettingParameterNames, storedProc);
+            }
+            return ds;
         }
     }
 }

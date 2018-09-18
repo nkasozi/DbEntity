@@ -1,13 +1,10 @@
 ﻿
+using DbEntity;
 using Microsoft.Practices.EnterpriseLibrary.Data;
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 
 public static class DbEntityDbHandler
@@ -16,25 +13,12 @@ public static class DbEntityDbHandler
     private static string _connectionString = "";
     private static Database _database = null;
 
-    public static void LogError(string ID, string Message)
-    {
-        try
-        {
-
-        }
-        catch (Exception ex)
-        {
-            throw ex;
-        }
-        return;
-    }
-
     public static DataTable ExecuteStoredProc(string StoredProc, params object[] parameters)
     {
         DataTable dt = new DataTable();
         try
         {
-            //InitDB();
+            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
             dt = _database.ExecuteDataSet(procommand).Tables[0];
 
@@ -52,6 +36,7 @@ public static class DbEntityDbHandler
         DataTable dt = new DataTable();
         try
         {
+            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
             dt = _database.ExecuteDataSet(procommand).Tables[0];
             foreach(DataRow row in dt.Rows)
@@ -72,51 +57,8 @@ public static class DbEntityDbHandler
         //no connection string was set prior to calling this guy
         if (string.IsNullOrEmpty(_connectionString)) { throw new Exception($"Connection string {_connectionString} cant be NULL or EMPTY"); }
 
-        //try to update the config file with the new connection string
-        //bool isConfigUpdated = CreateConstringInConfig(_connectionString);
-
-        ////error on changing the config file
-        //if (!isConfigUpdated) { return isConfigUpdated; }
-
         //if the database is null then, create a new connection
         _database = _database ?? new Microsoft.Practices.EnterpriseLibrary.Data.Sql.SqlDatabase(_connectionString);
-        return true;
-    }
-
-    private static bool CreateConstringInConfig(string DbConString)
-    {
-        // Get the application configuration file.
-        Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-
-        // Create a connection string element and
-        // save it to the configuration file.
-
-        // Create a connection string element.
-        ConnectionStringSettings csSettings = new ConnectionStringSettings();
-
-        //make sure these guys are set
-        csSettings.Name = "DbEntityConnectionString";
-        csSettings.ConnectionString = DbConString;
-        csSettings.ProviderName = "System.Data.SqlClient";
-
-        // Get the connection strings section.
-        ConnectionStringsSection csSection = config.ConnectionStrings;
-        
-
-        // Add the new element.
-        try
-        {
-            csSection.ConnectionStrings.Remove(csSettings);
-            csSection.ConnectionStrings.Add(csSettings);
-        }
-        catch (Exception ex)
-        {
-            return false;
-        }
-
-        // Save the configuration file.
-        config.Save(ConfigurationSaveMode.Modified);
-       
         return true;
     }
 
@@ -125,7 +67,7 @@ public static class DbEntityDbHandler
         DataSet dt = new DataSet();
         try
         {
-            //InitDB();
+            //DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetSqlStringCommand(sqlQuery);
             dt = _database.ExecuteDataSet(procommand);
 
@@ -142,7 +84,7 @@ public static class DbEntityDbHandler
         int dt = 0;
         try
         {
-            //InitDB();
+            //DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetSqlStringCommand(sqlQuery);
             dt = _database.ExecuteNonQuery(procommand);
 
@@ -159,7 +101,7 @@ public static class DbEntityDbHandler
         int rowsAffected = 0;
         try
         {
-            //InitDB();
+            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
             rowsAffected = _database.ExecuteNonQuery(procommand);
             return rowsAffected;
@@ -187,7 +129,7 @@ public static class DbEntityDbHandler
         DataSet ds = new DataSet();
         try
         {
-            //InitDB();
+            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
             DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
             ds = _database.ExecuteDataSet(procommand);
             return ds;
