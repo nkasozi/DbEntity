@@ -11,11 +11,12 @@ namespace DbEntity
 
         public string StatusCode { get; set; }
         public string StatusDesc { get; set; }
-        public string StoredProcedureParametersPassed { get; set; }
+        
 
         //Simple implementation of a Last Recently Used (LRU) cache to hold the last stored paramaters picked from DB 
         //(prevent too many calls to the Db to pick parameters of stored proc)
         private Dictionary<string, DataSet> StoredProcParameters = new Dictionary<string, DataSet>();
+        private string StoredProcedureParametersPassed { get; set; }
 
         public DbEntity()
         {
@@ -24,6 +25,11 @@ namespace DbEntity
         public virtual bool IsValid()
         {
             return true;
+        }
+
+        public string GetStoredProcedureParametersPassed()
+        {
+            return StoredProcedureParametersPassed;
         }
 
         public virtual Task SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)

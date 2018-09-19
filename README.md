@@ -4,7 +4,7 @@ Stored Proc support in most popular ORMs is terrible. ORM's are great...but the 
 - You use an ORM like Entity framework but it writes terrible SQL.
 - You understand that many times your stored procedures are way faster than any SQL that orm will spill out and invoking the stored  proc using ORM is a pain.
 
-Db Entity is for those people who are tired of ORMs with terrible stored proc support. Basically you are the sort of engineer who wants fine grained
+Db Entity is for those people (SQL Server users) who are tired of ORMs with terrible stored proc support. Basically you are the sort of engineer who wants fine grained
 control with all the speed that ORMs give you. You value speed and clarity over other stuff. DbEntity rides on top of the popular
 Castle Active Record ORM (which also rides on top on Nhibernate)
 
@@ -85,7 +85,7 @@ You can echo out the Values passed to the stored proc by doing something like th
 ```
 
 //will have the exact stored proc name and the value sent to the db
-Console.WriteLine(item.StoredProcedureParametersPassed);
+Console.WriteLine(item.GetStoredProcedureParametersPassed());
 
 ```
 # How about a complex Type...one which is not mapped to any object in your project
