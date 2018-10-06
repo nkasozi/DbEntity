@@ -224,6 +224,30 @@ namespace DbEntity
             return true;
         }
 
+        public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
         public virtual T[] QueryWithStoredProcAutoParams(string storedProc)
         {
             List<T> all = new List<T>();
@@ -268,30 +292,6 @@ namespace DbEntity
         public virtual int DeleteWithStoredProcAutoParams(string storedProc)
         {
             object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
@@ -350,6 +350,32 @@ namespace DbEntity
 
             return all.ToArray();
         }
+
+        public static int SaveUsingStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public static int InsertUsingStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public static int UpdateUsingStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        public static int DeleteUsingStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
+            return rowsAffected;
+        }
+
+        
 
     }
 }
