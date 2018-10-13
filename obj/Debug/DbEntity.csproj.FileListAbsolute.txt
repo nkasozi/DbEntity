@@ -63,3 +63,11 @@ E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.csproj.CopyComplete
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.dll
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.pdb
 E:\PePay\ChangeRequestProject\DbEntity\obj\Debug\DbEntity.csprojAssemblyReference.cache
+D:\Work\DbEntity\DbEntity\bin\Debug\DbEntity.dll.config
+D:\Work\DbEntity\DbEntity\bin\Debug\DbEntity.dll
+D:\Work\DbEntity\DbEntity\bin\Debug\DbEntity.pdb
+D:\Work\DbEntity\DbEntity\obj\Debug\DbEntity.csprojAssemblyReference.cache
+D:\Work\DbEntity\DbEntity\obj\Debug\DbEntity.csproj.CoreCompileInputs.cache
+D:\Work\DbEntity\DbEntity\obj\Debug\DbEntity.csproj.CopyComplete
+D:\Work\DbEntity\DbEntity\obj\Debug\DbEntity.dll
+D:\Work\DbEntity\DbEntity\obj\Debug\DbEntity.pdb

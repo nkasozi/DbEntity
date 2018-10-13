@@ -209,7 +209,7 @@ namespace DbEntity
             }
             else
             {
-                ds = DbEntityDbHandler.ExecuteDataSet(DbInitializer.StoredProcForGettingParameterNames, storedProc);
+                ds = DbEntityDbHandler.ExecuteDataSet(DbGlobals.StoredProcForGettingParameterNames, storedProc);
             }
             return ds;
         }
@@ -224,24 +224,32 @@ namespace DbEntity
             return true;
         }
 
+        //method implemented for readability
+        //similar to user.Save()
         public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
+        //method implemented for readability
+        //similar to user.Insert()
         public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
+        //method implemented for readability
+        //similar to user.Update()
         public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
 
+        //method implemented for readability
+        //similar to user.Delete()
         public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
@@ -268,28 +276,7 @@ namespace DbEntity
             return all.ToArray();
         }
 
-        public virtual int SaveWithStoredProcAutoParams(string storedProc)
-        {
-            object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int InsertWithStoredProcAutoParams(string storedProc)
-        {
-            object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int UpdateWithStoredProcAutoParams(string storedProc)
-        {
-            object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public virtual int DeleteWithStoredProcAutoParams(string storedProc)
+        public virtual int ExecuteNonQueryStoredProcAutoParams(string storedProc)
         {
             object[] storedProcParameters = GetStoredProcParameters(storedProc);
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
@@ -309,22 +296,30 @@ namespace DbEntity
             StatusDesc = Message;
             return true;
         }
-    
+
+        //method implemented for readability
+        //similar to user.SaveAsync()
         public virtual Task SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => SaveWithStoredProc(storedProc, storedProcParameters));
         }
 
+        //method implemented for readability
+        //similar to user.UpdateAsync()
         public virtual Task UpdateWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => UpdateWithStoredProc(storedProc, storedProcParameters));
         }
 
+        //method implemented for readability
+        //similar to user.InsertAsync()
         public virtual Task InsertWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => InsertWithStoredProc(storedProc, storedProcParameters));
         }
 
+        //method implemented for readability
+        //similar to user.DeleteAsync()
         public virtual Task DeleteWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => DeleteWithStoredProc(storedProc, storedProcParameters));
@@ -351,31 +346,11 @@ namespace DbEntity
             return all.ToArray();
         }
 
-        public static int SaveUsingStoredProc(string storedProc, params object[] storedProcParameters)
+        public static int ExecuteNonQueryWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;
         }
-
-        public static int InsertUsingStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public static int UpdateUsingStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        public static int DeleteUsingStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        
 
     }
 }

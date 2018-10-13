@@ -52,3 +52,14 @@ E:\PePay\ChangeRequestProject\DbEntityTester\obj\Debug\DbEntityTester.csproj.Cor
 E:\PePay\ChangeRequestProject\DbEntityTester\obj\Debug\DbEntityTester.csproj.CopyComplete
 E:\PePay\ChangeRequestProject\DbEntityTester\obj\Debug\DbEntityTester.exe
 E:\PePay\ChangeRequestProject\DbEntityTester\obj\Debug\DbEntityTester.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntityTester.exe.config
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntityTester.exe
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntityTester.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntity.dll
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntity.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Debug\DbEntity.dll.config
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Debug\DbEntityTester.csprojAssemblyReference.cache
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Debug\DbEntityTester.csproj.CoreCompileInputs.cache
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Debug\DbEntityTester.csproj.CopyComplete
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Debug\DbEntityTester.exe
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Debug\DbEntityTester.pdb

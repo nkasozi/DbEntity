@@ -93,3 +93,14 @@ E:\PePay\ChangeRequestProject\DbEntity\DbEntityTester\obj\Release\DbEntityTester
 E:\PePay\ChangeRequestProject\DbEntity\DbEntityTester\obj\Release\DbEntityTester.csproj.CopyComplete
 E:\PePay\ChangeRequestProject\DbEntity\DbEntityTester\obj\Release\DbEntityTester.exe
 E:\PePay\ChangeRequestProject\DbEntity\DbEntityTester\obj\Release\DbEntityTester.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntityTester.exe.config
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntityTester.exe
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntityTester.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntity.dll
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntity.pdb
+D:\Work\DbEntity\DbEntity\DbEntityTester\bin\Release\DbEntity.dll.config
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Release\DbEntityTester.csprojAssemblyReference.cache
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Release\DbEntityTester.csproj.CoreCompileInputs.cache
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Release\DbEntityTester.csproj.CopyComplete
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Release\DbEntityTester.exe
+D:\Work\DbEntity\DbEntity\DbEntityTester\obj\Release\DbEntityTester.pdb
