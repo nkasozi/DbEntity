@@ -62,3 +62,4 @@ E:\PePay\ChangeRequestProject\DbEntity\obj\Release\DbEntity.csproj.CoreCompileIn
 E:\PePay\ChangeRequestProject\DbEntity\obj\Release\DbEntity.csproj.CopyComplete
 E:\PePay\ChangeRequestProject\DbEntity\obj\Release\DbEntity.dll
 E:\PePay\ChangeRequestProject\DbEntity\obj\Release\DbEntity.pdb
+E:\PePay\ChangeRequestProject\DbEntity\obj\Release\DbEntity.csprojAssemblyReference.cache

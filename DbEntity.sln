@@ -5,7 +5,7 @@ VisualStudioVersion = 15.0.27703.2042
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbEntity", "DbEntity.csproj", "{D3C47617-6387-4F91-925E-8D46AD09BF42}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbEntityTester", "..\DbEntityTester\DbEntityTester.csproj", "{089BA91C-A617-468C-99BF-EBA719D9A69C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbEntityTester", "DbEntityTester\DbEntityTester.csproj", "{089BA91C-A617-468C-99BF-EBA719D9A69C}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
