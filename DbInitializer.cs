@@ -9,22 +9,9 @@ using System.Xml.Linq;
 
 namespace DbEntity
 {
-    public class DbInitializer
+    public class DbInitializer:DbInitializerBase
     {
-        //constants
-        private const string EXCEPTION_LEAD_STRING = "EXCEPTION:";
-        private const string ACTIVE_RECORD_SECTION_NAME = "activerecord";
-        private const string ACTIVE_RECORD_SUB_SECTION_NAME = "config";
-        private const string CON_STRING_KEY_NAME = "connection.connection_string";
         
-        //variables
-        internal static bool IsInitSuccessfull = false;
-        internal static bool IsInitOfStoredProcSuccessfull = false;
-
-
-        //public variables
-        public static List<Type> TypesToKeepTrackOf = new List<Type>();
-
         //Initialize Db connection only...no updates done
         public static DbResult Initialize()
         {
@@ -32,24 +19,24 @@ namespace DbEntity
 
             try
             {
-                DbInitializerCore.AutoFindTypesToKeepTrackOf();
-                DbInitializerCore.SetConnectionStringInDatabaseHandler();
+                AutoFindTypesToKeepTrackOf();
+                SetConnectionStringInDatabaseHandler();
 
-                apiResult = DbInitializerCore.CreateStoredProcedures();
+                apiResult = CreateStoredProcedures();
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
 
                 IConfigurationSource source = ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
-                IsInitSuccessfull = true;
+                _is_init_successfull = true;
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)
             {
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
-                    IsInitSuccessfull = true;
+                    _is_init_successfull = true;
                     apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
                     apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
@@ -71,14 +58,14 @@ namespace DbEntity
 
             try
             {
-                DbInitializerCore.AutoFindTypesToKeepTrackOf();
+                AutoFindTypesToKeepTrackOf();
 
-                apiResult = DbInitializerCore.ExecuteCreateDatabaseSQLIfNotExists();
+                apiResult = ExecuteCreateDatabaseSQLIfNotExists();
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
 
-                apiResult = DbInitializerCore.CreateStoredProcedures();
+                apiResult = CreateStoredProcedures();
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
@@ -86,14 +73,14 @@ namespace DbEntity
                 IConfigurationSource source = ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.UpdateSchema();
-                IsInitSuccessfull = true;
+                _is_init_successfull = true;
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)
             {
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
-                    IsInitSuccessfull = true;
+                    _is_init_successfull = true;
                     apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
                     apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
@@ -113,11 +100,11 @@ namespace DbEntity
 
             try
             {
-                DbInitializerCore.AutoFindTypesToKeepTrackOf();
+                AutoFindTypesToKeepTrackOf();
 
-                DbInitializerCore.SetConnectionStringInDatabaseHandler();
+                SetConnectionStringInDatabaseHandler();
 
-                apiResult = DbInitializerCore.CreateStoredProcedures();
+                apiResult = CreateStoredProcedures();
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
@@ -126,14 +113,14 @@ namespace DbEntity
 
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.UpdateSchema();
-                IsInitSuccessfull = true;
+                _is_init_successfull = true;
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)
             {
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
-                    IsInitSuccessfull = true;
+                    _is_init_successfull = true;
                     apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
                     apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
@@ -153,11 +140,11 @@ namespace DbEntity
 
             try
             {
-                DbInitializerCore.AutoFindTypesToKeepTrackOf();
+                AutoFindTypesToKeepTrackOf();
 
-                DbInitializerCore.SetConnectionStringInDatabaseHandler();
+                SetConnectionStringInDatabaseHandler();
 
-                apiResult = DbInitializerCore.ExecuteDropDatabaseSQLIfExists();
+                apiResult = ExecuteDropDatabaseSQLIfExists();
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
@@ -168,7 +155,7 @@ namespace DbEntity
             {
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
-                    IsInitSuccessfull = true;
+                    _is_init_successfull = true;
                     apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
                     apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
@@ -184,17 +171,13 @@ namespace DbEntity
         //checks if the db connection has ever been set
         public static bool ThrowExceptionIfNoSuccessfullInit()
         {
-            if (!IsInitSuccessfull)
+            if (!_is_init_successfull)
             {
-                throw new Exception($"Db not Initialized. Please Use [{nameof(DbInitializer.Initialize)}] or any other Initialize Methods at App Start");
+                throw new Exception($"Db not Initialized. Please Use [{nameof(Initialize)}] or any other Initialize Methods at App Start");
             }
 
             return true;
         }
-
-
-
-
     }
 
     //constants class

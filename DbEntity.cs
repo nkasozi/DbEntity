@@ -6,256 +6,41 @@ using System.Threading.Tasks;
 
 namespace DbEntity
 {
-    public class DbEntity<T> : ActiveRecordBase<T> where T : new()
+    public class DbEntity<T> : DbEntityBase<T> where T : new()
     {
-
-        public string StatusCode { get; set; }
-        public string StatusDesc { get; set; }
-        
-
-        //Simple implementation of a Last Recently Used (LRU) cache to hold the last stored paramaters picked from DB 
-        //(prevent too many calls to the Db to pick parameters of stored proc)
-        private Dictionary<string, DataSet> _storedProcParameters = new Dictionary<string, DataSet>();
-        private string _storedProcedureParametersPassed { get; set; }
-
         public DbEntity()
         {
         }
 
-        private static void CopyDataRowValuesToObjectProperties(DataRow parent, T obj)
+        /**DB Select and Query Methods**/
+        //method implemented for Async 
+        //similar to user.QueryAsync()
+        public static Task<T[]> QueryWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
-            var objProperties = obj.GetType().GetProperties();
+            return Task.Factory.StartNew(() => QueryWithStoredProc(storedProc, storedProcParameters));
+        }
 
-            //loop thru all obj properties
-            foreach (var objProperty in objProperties)
+        //method implemented for readability 
+        //similar to user.Query()
+        //query db for rows matching object using a stored proc
+        public static T[] QueryWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            List<T> all = new List<T>();
+
+            DataTable dt = DbEntityDbHandler.ExecuteStoredProc(storedProc, storedProcParameters);
+
+            foreach (DataRow dr in dt.Rows)
             {
-                try
-                {
-                    //get all custom attributes first
-                    object[] customAttributes = objProperty.GetCustomAttributes(false);
-
-                    //flag to be set when a property has been set
-                    bool hasBeenSet = false;
-
-                    //loop thru for the custom attributes first
-                    foreach (object customAttribute in customAttributes)
-                    {
-
-                        //primary key attribute
-                        //e.g [PrimaryKey(PrimaryKeyType.Identity, "RecordId")]
-                        if (customAttribute is PrimaryKeyAttribute pkAttribute)
-                        {
-                            string column = pkAttribute.Column;
-                            if (column != null)
-                            {
-                                objProperty.SetValue(obj, parent[column], new object[] { });
-                                hasBeenSet = true;
-                                break;
-                            }
-                        }
-
-                        //property attribute
-                        //e.g [Property(Length = 50, Column="MyColumn")]
-                        if (customAttribute is PropertyAttribute propertyAttribute)
-                        {
-                            string column = propertyAttribute.Column;
-                            if (column != null)
-                            {
-                                objProperty.SetValue(obj, parent[column], new object[] { });
-                                hasBeenSet = true;
-                                break;
-                            }
-                        }
-                    }
-
-                    //this is a custom attribute...it has been set in the for loop
-                    if (hasBeenSet)
-                        continue;
-
-                    //normal obj property
-                    objProperty.SetValue(obj, parent[objProperty.Name], new object[] { });
-                }
-                catch (Exception ex)
-                {
-                    //db value is null so we cant convert it to .net value
-                    if (ex.Message.ToUpper().Contains("DBNull".ToUpper()))
-                        continue;
-
-                    //property in object not found in row returned
-                    if (ex.Message.ToUpper().Contains("does not belong to table Table".ToUpper()))
-                        continue;
-
-                    //set the status code and failure desc values 
-                    TryToSetObjectProperty(obj, nameof(StatusCode), DbGlobals.FAILURE_STATUS_CODE);
-                    TryToSetObjectProperty(obj, nameof(StatusDesc), $"FAILED: UNABLE TO SET VALUE FOR PROPERTY [{objProperty.Name}]. REASON: {ex.Message}");
-                    return;
-                }
+                T obj = new T();
+                CopyDataRowValuesToObjectProperties(dr, obj);
+                all.Add(obj);
             }
 
-            //set the status code and status desc values to success
-            TryToSetObjectProperty(obj, nameof(StatusCode), DbGlobals.SUCCESS_STATUS_CODE);
-            TryToSetObjectProperty(obj, nameof(StatusDesc), DbGlobals.SUCCESS_STATUS_TEXT);
+            return all.ToArray();
         }
 
-        private static void TryToSetObjectProperty(object theObject, string propertyName, object value)
-        {
-            try
-            {
-                Type type = theObject.GetType();
-                var property = type.GetProperty(propertyName);
-                var setter = property.SetMethod;
-                setter.Invoke(theObject, new object[] { value });
-            }
-            catch (Exception) { }
-        }
-
-        private object[] GetStoredProcParameters(string storedProc)
-        {
-            List<object> allParameters = new List<object>();
-
-            DataSet ds = null;
-
-            if (_storedProcParameters.ContainsKey(storedProc))
-            {
-                ds = _storedProcParameters[storedProc];
-            }
-            else
-            {
-                ds = FetchStoredProcParametersFromDb(storedProc);
-            }
-
-            if (ds?.Tables.Count <= 0)
-            {
-                if (!_storedProcParameters.ContainsKey(storedProc))
-                    _storedProcParameters.Add(storedProc, ds);
-            }
-
-            DataTable dataTable = ds.Tables[0];
-
-            if (dataTable?.Rows.Count <= 0)
-            {
-                if (!_storedProcParameters.ContainsKey(storedProc))
-                    _storedProcParameters.Add(storedProc, ds);
-            }
-
-            T obj = new T();
-            _storedProcedureParametersPassed = "";
-
-            //aim here is simple
-            //for each stored procedure parameter found,
-            //we find the object property with the same name,
-            //we then get that propertys value and save that in the array of parameters to pass
-            //since sql is not Case sensitive, we find first matching parameter
-
-            foreach (DataRow storedProcParameter in dataTable.Rows)
-            {
-
-                var objProperties = obj.GetType().GetProperties();
-                bool propertyWasFound = false;
-                string storedProcParamaterName = storedProcParameter["Parameter_name"].ToString().Replace("@", string.Empty);
-
-                foreach (var objProperty in objProperties)
-                {
-                    try
-                    {
-
-                        if (objProperty.Name.ToUpper() == storedProcParamaterName.ToUpper())
-                        {
-
-                            object objValue = objProperty.GetValue(this, null);
-                            _storedProcedureParametersPassed += $"{storedProcParamaterName}: {objValue},";
-                            allParameters.Add(objValue);
-                            propertyWasFound = true;
-                            break;
-                        }
-
-                    }
-                    catch (Exception)
-                    {
-                    }
-                }
-
-                //if after looping thru all the obj properties
-                //we still cant find a property with the same name
-                //just set that stored proc paramater value as null
-
-                if (!propertyWasFound)
-                {
-                    _storedProcedureParametersPassed += $"{storedProcParamaterName}: null,";
-                    allParameters.Add(null);
-                }
-
-            }
-
-            if (!_storedProcParameters.ContainsKey(storedProc))
-                _storedProcParameters.Add(storedProc, ds);
-
-            _storedProcedureParametersPassed.Trim(',');
-            return allParameters.ToArray();
-        }
-
-        private DataSet FetchStoredProcParametersFromDb(string storedProc)
-        {
-            DataSet ds = new DataSet();
-            if (!DbInitializer.IsInitOfStoredProcSuccessfull)
-            {
-                string sql = "select" +
-                             "'Parameter_name' = name," +
-                             "'Type' = type_name(user_type_id)," +
-                             "'Param_order' = parameter_id" +
-                             "from sys.parameters where object_id = object_id(@StoredProcName)" +
-                             "order by Param_order asc";
-                ds = DbEntityDbHandler.ExecuteSqlQuery(sql);
-            }
-            else
-            {
-                ds = DbEntityDbHandler.ExecuteDataSet(DbGlobals.StoredProcForGettingParameterNames, storedProc);
-            }
-            return ds;
-        }
-    
-        public string GetStoredProcedureParametersPassed()
-        {
-            return _storedProcedureParametersPassed;
-        }
-
-        public virtual bool IsValid()
-        {
-            return true;
-        }
-
-        //method implemented for readability
-        //similar to user.Save()
-        public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        //method implemented for readability
-        //similar to user.Insert()
-        public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        //method implemented for readability
-        //similar to user.Update()
-        public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
-        //method implemented for readability
-        //similar to user.Delete()
-        public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
-        {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
-        }
-
+        //query for results from DB
+        //auto populate the stored proc parameters based on the obj properties
         public virtual T[] QueryWithStoredProcAutoParams(string storedProc)
         {
             List<T> all = new List<T>();
@@ -276,39 +61,88 @@ namespace DbEntity
             return all.ToArray();
         }
 
-        public virtual int ExecuteNonQueryStoredProcAutoParams(string storedProc)
+        //query for results from DB
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual Task<T[]> QueryWithStoredProcAutoParamsAysnc(string storedProc)
         {
-            object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
+            return Task.Factory.StartNew(() => QueryWithStoredProcAutoParams(storedProc));
         }
 
-        public virtual bool SetSuccessAsStatusInResponseFields()
-        {
-            StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
-            StatusDesc = DbGlobals.SUCCESS_STATUS_TEXT;
-            return true;
-        }
 
-        public virtual bool SetFailuresAsStatusInResponseFields(string Message)
+
+        /**DB Delete Methods**/
+        //method implemented for readability
+        //similar to user.DeleteAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual Task<int> DeleteWithStoredProcAutoParamsAsync(string storedProc)
         {
-            StatusCode = DbGlobals.FAILURE_STATUS_CODE;
-            StatusDesc = Message;
-            return true;
+            return Task.Factory.StartNew(() => ExecuteNonQueryStoredProcAutoParams(storedProc));
         }
 
         //method implemented for readability
-        //similar to user.SaveAsync()
-        public virtual Task SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        //similar to user.DeleteAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual int DeleteWithStoredProcAutoParams(string storedProc)
         {
-            return Task.Factory.StartNew(() => SaveWithStoredProc(storedProc, storedProcParameters));
+            return ExecuteNonQueryStoredProcAutoParams(storedProc);
+        }
+
+        //method implemented for readability
+        //similar to user.DeleteAsync()
+        public virtual Task<int> DeleteWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        {
+            return Task.Factory.StartNew(() => DeleteWithStoredProc(storedProc, storedProcParameters));
+        }
+
+        //method implemented for readability
+        //similar to user.Delete()
+        public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+        }
+
+
+
+        /**DB Update Methods**/
+        //method implemented for readability
+        //similar to user.UpdateAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual Task<int> UpdateWithStoredProcAutoParamsAsync(string storedProc)
+        {
+            return Task.Factory.StartNew(() => ExecuteNonQueryStoredProcAutoParams(storedProc));
         }
 
         //method implemented for readability
         //similar to user.UpdateAsync()
-        public virtual Task UpdateWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        public virtual Task<int> UpdateWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
             return Task.Factory.StartNew(() => UpdateWithStoredProc(storedProc, storedProcParameters));
+        }
+
+        //method implemented for readability
+        //similar to user.Update()
+        public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+        }
+
+        //method implemented for readability
+        //similar to user.UpdateAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual int UpdateWithStoredProcAutoParams(string storedProc)
+        {
+            return ExecuteNonQueryStoredProcAutoParams(storedProc);
+        }
+
+
+
+        /**DB Insert Methods**/
+        //method implemented for readability
+        //similar to user.InsertAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual Task<int> InsertWithStoredProcAutoParamsAsync(string storedProc)
+        {
+            return Task.Factory.StartNew(() => ExecuteNonQueryStoredProcAutoParams(storedProc));
         }
 
         //method implemented for readability
@@ -319,38 +153,56 @@ namespace DbEntity
         }
 
         //method implemented for readability
-        //similar to user.DeleteAsync()
-        public virtual Task DeleteWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        //similar to user.Insert()
+        public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
-            return Task.Factory.StartNew(() => DeleteWithStoredProc(storedProc, storedProcParameters));
+            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
         }
 
-        public static Task QueryWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        //method implemented for readability
+        //similar to user.InsertAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual int InsertWithStoredProcAutoParams(string storedProc)
         {
-            return Task.Factory.StartNew(() => QueryWithStoredProc(storedProc, storedProcParameters));
+            return ExecuteNonQueryStoredProcAutoParams(storedProc);
         }
 
-        public static T[] QueryWithStoredProc(string storedProc, params object[] storedProcParameters)
+
+
+        /**DB Save (Insert or Update if exists) Methods**/
+        //method implemented for readability
+        //similar to user.SaveAsync()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual Task<int> SaveWithStoredProcAutoParamsAsync(string storedProc)
         {
-            List<T> all = new List<T>();
-
-            DataTable dt = DbEntityDbHandler.ExecuteStoredProc(storedProc, storedProcParameters);
-
-            foreach (DataRow dr in dt.Rows)
-            {
-                T obj = new T();
-                CopyDataRowValuesToObjectProperties(dr, obj);
-                all.Add(obj);
-            }
-
-            return all.ToArray();
+            return Task.Factory.StartNew(() => ExecuteNonQueryStoredProcAutoParams(storedProc));
         }
 
-        public static int ExecuteNonQueryWithStoredProc(string storedProc, params object[] storedProcParameters)
+        //method implemented for readability
+        //similar to user.SaveAsync()
+        public virtual Task<int> SaveWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
         {
-            int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
-            return rowsAffected;
+            return Task.Factory.StartNew(() => SaveWithStoredProc(storedProc, storedProcParameters));
         }
 
+        //method implemented for readability
+        //similar to user.Save()
+        public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+        }
+
+        //method implemented for readability
+        //similar to user.Save()
+        //auto populate the stored proc parameters based on the obj properties
+        public virtual int SaveWithStoredProcAutoParams(string storedProc)
+        {
+            return ExecuteNonQueryStoredProcAutoParams(storedProc);
+        }
+
+        public virtual Task SaveAsync()
+        {
+           return Task.Factory.StartNew(() => Save());
+        }
     }
 }
