@@ -288,11 +288,11 @@ namespace DbEntity
         protected int ExecuteNonQueryStoredProcAutoParams(string storedProc)
         {
             object[] storedProcParameters = GetStoredProcParameters(storedProc);
-            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
         }
 
         //update/insert/delete from db rows using a stored proc
-        protected static int ExecuteNonQueryWithStoredProc(string storedProc, params object[] storedProcParameters)
+        protected static int ExecuteNonQueryUsingStoredProc(string storedProc, params object[] storedProcParameters)
         {
             int rowsAffected = DbEntityDbHandler.ExecuteNonQuery(storedProc, storedProcParameters);
             return rowsAffected;

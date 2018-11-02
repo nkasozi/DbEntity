@@ -98,7 +98,7 @@ namespace DbEntity
         //similar to user.Delete()
         public virtual int DeleteWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
-            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
         }
 
 
@@ -123,7 +123,7 @@ namespace DbEntity
         //similar to user.Update()
         public virtual int UpdateWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
-            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
         }
 
         //method implemented for readability
@@ -156,7 +156,7 @@ namespace DbEntity
         //similar to user.Insert()
         public virtual int InsertWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
-            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
         }
 
         //method implemented for readability
@@ -189,7 +189,7 @@ namespace DbEntity
         //similar to user.Save()
         public virtual int SaveWithStoredProc(string storedProc, params object[] storedProcParameters)
         {
-            return ExecuteNonQueryWithStoredProc(storedProc, storedProcParameters);
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
         }
 
         //method implemented for readability
@@ -204,5 +204,22 @@ namespace DbEntity
         {
            return Task.Factory.StartNew(() => Save());
         }
+
+        //method implemented for readability
+        //similar to user.Save()
+        //auto populate the stored proc parameters based on the obj properties
+        public static int ExecuteNonQueryWithStoredProc(string storedProc, params object[] storedProcParameters)
+        {
+            return ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters);
+        }
+
+        //method implemented for readability
+        //similar to user.Save()
+        //auto populate the stored proc parameters based on the obj properties
+        public static Task<int> ExecuteNonQueryWithStoredProcAsync(string storedProc, params object[] storedProcParameters)
+        {
+            return Task.Factory.StartNew(()=> ExecuteNonQueryUsingStoredProc(storedProc, storedProcParameters));
+        }
+
     }
 }

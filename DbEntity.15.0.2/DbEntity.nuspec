@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>DbEntity</id>
+    <version>15.0.3</version>
+    <title>DbEntity</title>
+    <authors>Nkasozi</authors>
+    <owners>Nkasozi</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://opensource.org/licenses/MIT</licenseUrl>
+    <projectUrl>http://github.com/nkasozi/DbEntity</projectUrl>
+    <description>Simple Stored Procedure Support for Castle Active Record</description>
+    <copyright>Copyright 2018</copyright>
+    <tags>DbEntity</tags>
+    <dependencies>
+      <dependency id="Caramel" version="1.0.0.41" />
+      <dependency id="Caramel.Castle.ActiveRecord" version="1.0.0.40" />
+      <dependency id="Castle.Activerecord" version="3.0.0.1" />
+      <dependency id="Castle.Core" version="3.0.0.4001" />
+    </dependencies>
+  </metadata>
+</package>
