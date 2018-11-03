@@ -121,9 +121,16 @@ Install-Package DbEntity
 # Initialization. To Use DbEntity's powers, you need to call the Initialize method at the start of the app(global.asax or something)
 
 ```
-// pass the array of items you want Active Record to keep track of so you can enjoy stuff like auto create tables
-//ability to use the good old Item.Save() sql stuff (which is slow by the way)
- DbInitializer.TypesToKeepTrackOf.AddRange(new Type[] { typeof(Item) });
+//pass the aasembly that contains the types that inherit from DbEntity for detection
+//This provides ability to use the good old Item.Save() sql stuff (which is slow by the way)
+//Many ways of archieving this
+//1.
+DbInitializer.LoadTypesToKeepTrackOfFromAssembly(Assembly.GetEntryAssembly());
+ 
+//2.
+//get the aasembly automatically from a class that inherits from Dbentity
+//this will auto detect any other classes in the assembly that also inherit from Dbentity
+DbInitializer.LoadTypesToKeepTrackOfFromAssembly(Assembly.GetAssembly(typeof(SomaDbInitializer));
 
 //just initialize this...nothing fancy
 DbResult result = DbInitializer.Initialize();
