@@ -12,7 +12,10 @@ namespace DbEntityTester
         static void Main(string[] args)
         {
 
-            DbResult result = DbInitializer.Initialize();
+            DbResult result = DbInitializer.Initialize(@"UID=sa;Password=T3rr1613;Initial Catalog=TestDB;Data Source=DESKTOP-MH3IFUN\SOZIZ");
+
+            DbResult dbresult = DbInitializer.Initialize();
+
             //Item[] items3 = Item.QueryWithStoredProc("GetAllItems");
             //DbInitializer.TypesToKeepTrackOf.AddRange(new Type[] { typeof(Item) });
             //DbResult result = DbInitializer.DropAndRecreateDb();

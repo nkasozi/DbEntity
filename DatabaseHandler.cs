@@ -18,7 +18,7 @@ public static class DbEntityDbHandler
         DataTable dt = new DataTable();
         try
         {
-            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
+            DbInitializer.ThrowExceptionIfInitailizationWasNotSuccessfull();
             DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
             dt = _database.ExecuteDataSet(procommand).Tables[0];
 
@@ -36,7 +36,7 @@ public static class DbEntityDbHandler
         DataTable dt = new DataTable();
         try
         {
-            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
+            DbInitializer.ThrowExceptionIfInitailizationWasNotSuccessfull();
             DbCommand procommand = _database.GetStoredProcCommand(StoredProc, parameters);
             dt = _database.ExecuteDataSet(procommand).Tables[0];
             foreach(DataRow row in dt.Rows)
@@ -101,7 +101,7 @@ public static class DbEntityDbHandler
         int rowsAffected = 0;
         try
         {
-            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
+            DbInitializer.ThrowExceptionIfInitailizationWasNotSuccessfull();
             DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
             rowsAffected = _database.ExecuteNonQuery(procommand);
             return rowsAffected;
@@ -129,7 +129,7 @@ public static class DbEntityDbHandler
         DataSet ds = new DataSet();
         try
         {
-            DbInitializer.ThrowExceptionIfNoSuccessfullInit();
+            DbInitializer.ThrowExceptionIfInitailizationWasNotSuccessfull();
             DbCommand procommand = _database.GetStoredProcCommand(storedProc, parameters);
             ds = _database.ExecuteDataSet(procommand);
             return ds;

@@ -1,0 +1,1 @@
+﻿create proc GetStoredProcParametersInOrder @StoredProcName varchar(200) as Begin select 'Parameter_name' = name, 'Type' = type_name(user_type_id), 'Param_order' = parameter_id from sys.parameters where object_id = object_id(@StoredProcName) order by Param_order asc End

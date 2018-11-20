@@ -1,6 +1,8 @@
 ﻿using Castle.ActiveRecord;
 using Castle.ActiveRecord.Framework;
+using Castle.ActiveRecord.Framework.Config;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
@@ -9,50 +11,88 @@ using System.Xml.Linq;
 
 namespace DbEntity
 {
-    public class DbInitializer:DbInitializerBase
+    public class DbInitializer : DbInitializerBase
     {
-        
+
         //Initialize Db connection only...no updates done
-        public static DbResult Initialize()
+        public static DbResult Initialize(string ConnectionString = null)
         {
-            DbResult apiResult = new DbResult();
+            DbResult dbResult = new DbResult();
 
             try
             {
+                //attempt to determine the types to keep track of automatically
+                //by reflection (op result doesnt really matter)
                 AutoFindTypesToKeepTrackOf();
-                SetConnectionStringInDatabaseHandler();
 
-                apiResult = CreateStoredProcedures();
+                dbResult = SetConnectionStringInDatabaseHandler(ConnectionString);
 
-                if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
-                    return apiResult;
+                //failed to set con string
+                //we stop here since setting the con string is necessary to contine
+                if (dbResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
+                    return dbResult;
 
-                IConfigurationSource source = ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
+                //try to create stored procedures for fetching 
+                //parameters for any other stored proc
+                //this makes calls to any AutoParams method much faster
+                //if its successfull otherwise we default to executing raw sql
+                CreateStoredProcedures();
+
+                var source = GetConfigurationSource(ConnectionString);
+
+                //initialize active record
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 _is_init_successfull = true;
-                apiResult.SetSuccessAsStatusInResponseFields();
+
+                //all is good
+                dbResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)
             {
+                //they have called the initialize method again
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
                     _is_init_successfull = true;
-                    apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
-                    apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
+                    dbResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
+                    dbResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
+                //some other failure
                 else
                 {
-                    apiResult.SetFailuresAsStatusInResponseFields(EXCEPTION_LEAD_STRING + ex.Message);
+                    dbResult.SetFailuresAsStatusInResponseFields(EXCEPTION_LEAD_STRING + ex.Message);
                 }
             }
 
-            return apiResult;
+            return dbResult;
+        }
+
+        private static IConfigurationSource GetConfigurationSource(string ConnectionString = null)
+        {
+            //read from the app config file if
+            //no connection string specified
+            if (string.IsNullOrEmpty(ConnectionString))
+                return ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
+
+            //use inplace config for active record
+            //to create a connection string
+            var properties = new Dictionary<string, string>
+                {
+                    { "connection.driver_class", "NHibernate.Driver.SqlClientDriver" },
+                    { "dialect", "NHibernate.Dialect.MsSql2000Dialect" },
+                    { "connection.provider", "NHibernate.Connection.DriverConnectionProvider" },
+                    { "connection.connection_string", ConnectionString }
+                };
+
+
+            var source = new InPlaceConfigurationSource();
+            source.Add(typeof(ActiveRecordBase), properties);
+            return source;
         }
 
 
 
-        //Creates the Db if it doesnt exist,updates the db schema and initializes the db connection
-        public static DbResult CreateDbIfNotExistsAndUpdateSchema()
+        //Creates the Db if it doesnt exist, updates the db schema and initializes the db connection
+        public static DbResult CreateDbIfNotExistsAndUpdateSchema(string DbConnectionString = null)
         {
             DbResult apiResult = new DbResult();
 
@@ -60,19 +100,26 @@ namespace DbEntity
             {
                 AutoFindTypesToKeepTrackOf();
 
-                apiResult = ExecuteCreateDatabaseSQLIfNotExists();
+                //create the db 
+                apiResult = ExecuteCreateDatabaseSQLIfNotExists(DbConnectionString);
 
+                //we failed to create the db
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
 
-                apiResult = CreateStoredProcedures();
+                //try to create stored procedures for fetching 
+                //parameters for any other stored proc
+                //this makes calls to any AutoParams method much faster
+                //if its successfull otherwise we default to executing raw sql
+                CreateStoredProcedures();
 
-                if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
-                    return apiResult;
+                IConfigurationSource source = GetConfigurationSource(DbConnectionString);
 
-                IConfigurationSource source = ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
+                //initialize active record
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.UpdateSchema();
+
+                //we are all good
                 _is_init_successfull = true;
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
@@ -94,7 +141,7 @@ namespace DbEntity
         }
 
         //Updates the db schema and initializes the db connection
-        public static DbResult InitializeAndUpdateSchema()
+        public static DbResult InitializeAndUpdateSchema(string DbConnectionString = null)
         {
             DbResult apiResult = new DbResult();
 
@@ -102,22 +149,29 @@ namespace DbEntity
             {
                 AutoFindTypesToKeepTrackOf();
 
-                SetConnectionStringInDatabaseHandler();
-
-                apiResult = CreateStoredProcedures();
+                apiResult = SetConnectionStringInDatabaseHandler(DbConnectionString);
 
                 if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
                     return apiResult;
 
-                IConfigurationSource source = ConfigurationManager.GetSection(ACTIVE_RECORD_SECTION_NAME) as IConfigurationSource;
+                //try to create stored procedures for fetching 
+                //parameters for any other stored proc
+                //this makes calls to any AutoParams method much faster
+                //if its successfull otherwise we default to executing raw sql
+                CreateStoredProcedures();
+
+                IConfigurationSource source = GetConfigurationSource(DbConnectionString);
 
                 ActiveRecordStarter.Initialize(source, TypesToKeepTrackOf.ToArray());
                 ActiveRecordStarter.UpdateSchema();
+
+                //we are all good
                 _is_init_successfull = true;
                 apiResult.SetSuccessAsStatusInResponseFields();
             }
             catch (Exception ex)
             {
+                //double call on the init method of Active Record
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
                     _is_init_successfull = true;
@@ -134,47 +188,50 @@ namespace DbEntity
         }
 
         //Drops the database if its there, creates the database, updates the db schema and initializes the db connection
-        public static DbResult DropAndRecreateDb()
+        public static DbResult DropAndRecreateDb(string DbConnectionString = null)
         {
-            DbResult apiResult = new DbResult();
+            DbResult dbResult = new DbResult();
 
             try
             {
                 AutoFindTypesToKeepTrackOf();
 
-                SetConnectionStringInDatabaseHandler();
+                dbResult = SetConnectionStringInDatabaseHandler(DbConnectionString);
 
-                apiResult = ExecuteDropDatabaseSQLIfExists();
+                if (dbResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
+                    return dbResult;
 
-                if (apiResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
-                    return apiResult;
+                dbResult = ExecuteDropDatabaseSQLIfExists(DbConnectionString);
 
-                return CreateDbIfNotExistsAndUpdateSchema();
+                if (dbResult.StatusCode != DbGlobals.SUCCESS_STATUS_CODE)
+                    return dbResult;
+
+                return CreateDbIfNotExistsAndUpdateSchema(DbConnectionString);
             }
             catch (Exception ex)
             {
                 if (ex.Message.ToUpper().Contains("MORE THAN ONCE"))
                 {
                     _is_init_successfull = true;
-                    apiResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
-                    apiResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
+                    dbResult.StatusCode = DbGlobals.SUCCESS_STATUS_CODE;
+                    dbResult.StatusDesc = "SUSPECTED DOUBLE INITIALIZE: " + ex.Message;
                 }
                 else
                 {
-                    apiResult.SetFailuresAsStatusInResponseFields(EXCEPTION_LEAD_STRING + ex.Message);
+                    dbResult.SetFailuresAsStatusInResponseFields(EXCEPTION_LEAD_STRING + ex.Message);
                 }
             }
 
-            return apiResult;
+            return dbResult;
         }
 
-        //checks if the db connection has ever been set
-        public static bool ThrowExceptionIfNoSuccessfullInit()
+        //checks if one of the initialize methods has ever been called successfully
+        public static bool ThrowExceptionIfInitailizationWasNotSuccessfull()
         {
+            //this flag is set to false if no
+            //successfull call to any init method fails
             if (!_is_init_successfull)
-            {
                 throw new Exception($"Db not Initialized. Please Use [{nameof(Initialize)}] or any other Initialize Methods at App Start");
-            }
 
             return true;
         }
@@ -189,7 +246,7 @@ namespace DbEntity
         public const string SUCCESS_STATUS_TEXT = "SUCCESS";
 
         //internals...not be visibile outside this project
-        internal const string StoredProcForGettingParameterNames = "GetStoredProcParametersInOrder";
+        internal const string NameOfStoredProcToGetParameterNames = "GetStoredProcParametersInOrder";
     }
 
 

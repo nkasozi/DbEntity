@@ -175,10 +175,15 @@ namespace DbEntity
 
             DataSet ds = null;
 
+            //the parameters for this stored proc have aleady been fetched
+            //so we just use the same
             if (_stored_proc_params_dictionary.ContainsKey(storedProc))
             {
                 ds = _stored_proc_params_dictionary[storedProc];
             }
+
+            //no parameters ever found..
+            //we go to the db and pick them
             else
             {
                 ds = FetchStoredProcParametersFromDb(storedProc);
@@ -257,20 +262,25 @@ namespace DbEntity
         protected DataSet FetchStoredProcParametersFromDb(string storedProc)
         {
             DataSet ds = new DataSet();
-            if (!DbInitializerBase.WasInitOfStoredProcSuccessfull())
+
+            //if we managed to create the stored proc we can use to 
+            //get parameters of other stored procs
+            if (DbInitializerBase.WasInitOfStoredProcSuccessfull())
             {
-                string sql = "select" +
+                ds = DbEntityDbHandler.ExecuteDataSet(DbGlobals.NameOfStoredProcToGetParameterNames, storedProc);
+                return ds;
+            }
+
+            //we should just run a normal sql query to get the parameters for the 
+            //stored proc being called
+            string sql = "select" +
                              "'Parameter_name' = name," +
                              "'Type' = type_name(user_type_id)," +
                              "'Param_order' = parameter_id" +
                              "from sys.parameters where object_id = object_id(@StoredProcName)" +
                              "order by Param_order asc";
-                ds = DbEntityDbHandler.ExecuteSqlQuery(sql);
-            }
-            else
-            {
-                ds = DbEntityDbHandler.ExecuteDataSet(DbGlobals.StoredProcForGettingParameterNames, storedProc);
-            }
+
+            ds = DbEntityDbHandler.ExecuteSqlQuery(sql);
             return ds;
         }
 
@@ -281,7 +291,7 @@ namespace DbEntity
 
         public virtual bool IsValid()
         {
-           
+
             return true;
         }
 

@@ -75,10 +75,11 @@ namespace DbEntity
         }
 
         //sets the constring to whatever is read from the config file 
-        protected static DbResult SetConnectionStringInDatabaseHandler()
+        protected static DbResult SetConnectionStringInDatabaseHandler(string dbConnectionString = null)
         {
             DbResult dbResult = new DbResult();
-            string dbConnectionString = ReadConnectionFromConfig();
+
+            dbConnectionString = dbConnectionString ?? ReadConnectionFromConfig();
 
             bool con_string_was_set = DbEntityDbHandler.SetConnectionString(dbConnectionString);
 
@@ -101,7 +102,7 @@ namespace DbEntity
 
             try
             {
-                string createSql = $"create proc {DbGlobals.StoredProcForGettingParameterNames}" +
+                string createSql = $"create proc {DbGlobals.NameOfStoredProcToGetParameterNames}" +
                                     " @StoredProcName varchar(200)" +
                                     " as" +
                                     " Begin" +
@@ -119,6 +120,8 @@ namespace DbEntity
             catch (Exception ex)
             {
                 string msg = ex.Message.ToUpper();
+
+                //stored proc is already there
                 if (msg.Contains("ALREADY") || msg.Contains("EXISTS"))
                 {
                     _is_init_of_storedProcs_successfull = true;
@@ -133,13 +136,13 @@ namespace DbEntity
         }
 
         //creates the Db if it doesnt exists
-        protected static DbResult ExecuteCreateDatabaseSQLIfNotExists()
+        protected static DbResult ExecuteCreateDatabaseSQLIfNotExists(string DbConnectionString = null)
         {
             DbResult apiResult = new DbResult();
 
             try
             {
-                string connectionString = ReadConnectionFromConfig();
+                string connectionString = DbConnectionString ?? ReadConnectionFromConfig();
                 try
                 {
                     string databaseName = connectionString?.Split(';')?.Where(i => i.ToUpper().Contains("CATALOG"))?.FirstOrDefault()?.Split('=')?[1];
@@ -183,13 +186,13 @@ namespace DbEntity
         }
 
         //drops the Db if it exists
-        protected static DbResult ExecuteDropDatabaseSQLIfExists()
+        protected static DbResult ExecuteDropDatabaseSQLIfExists(string DbConnectionString = null)
         {
             DbResult apiResult = new DbResult();
 
             try
             {
-                string connectionString = ReadConnectionFromConfig();
+                string connectionString = DbConnectionString ?? ReadConnectionFromConfig();
 
                 try
                 {
